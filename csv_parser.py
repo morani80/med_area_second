@@ -20,11 +20,6 @@ class CsvParser:
         df = pd.read_csv(csv_file_path, encoding='cp932', header=None, skiprows=2,
                          usecols=[5], names=['cd_name'], dtype=str, na_filter=False)
         df = df['cd_name'].str.split(n=1, expand=True).rename(columns={0: 'town_cd', 1: 'town_name'})
-        # add prefecture
-        pref_df = df[df['town_cd'].str.len() == 2]
-        pref_dict = dict(zip(pref_df['town_cd'], pref_df['town_name']))
-        df['pref_cd'] = df['town_cd'].str[:2]
-        df['pref_name'] = df['pref_cd'].map(pref_dict)
 
         # add area2
         df['area2_cd'] = ''
@@ -37,6 +32,12 @@ class CsvParser:
                 area2_name = s['town_name']
             s['area2_cd'] = area2_cd
             s['area2_name'] = area2_name
+
+        # add prefecture
+        pref_df = df[df['town_cd'].str.len() == 2]
+        pref_dict = dict(zip(pref_df['town_cd'], pref_df['town_name']))
+        df['pref_cd'] = df['town_cd'].str[:2]
+        df['pref_name'] = df['pref_cd'].map(pref_dict)
 
         # filter only town data
         df = df[df['town_cd'].str.len() == 5]
