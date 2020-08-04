@@ -18,20 +18,26 @@ class CsvParser:
 
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html#pandas.read_csv
         df = pd.read_csv(csv_file_path, encoding='cp932', header=None, skiprows=2,
-                         usecols=[5], names=['cd_name'], dtype=str, na_filter=False)
-        df = df['cd_name'].str.split(n=1, expand=True).rename(columns={0: 'town_cd', 1: 'town_name'})
+                         usecols=[2, 5], names=['research_at', 'cd_name'], dtype=str, na_filter=False)
+        df = pd.concat([df['research_at'],
+                        df['cd_name'].str.split(n=1, expand=True).rename(columns={0: 'town_cd', 1: 'town_name'})], axis=1)
 
         # add area2
         df['area2_cd'] = ''
         df['area2_name'] = ''
         area2_cd = ''
         area2_name = ''
+        research_at = ''
         for _, s in df.iterrows():
             if len(s['town_cd']) == 4:
                 area2_cd = s['town_cd']
                 area2_name = s['town_name']
             s['area2_cd'] = area2_cd
             s['area2_name'] = area2_name
+            if not research_at:
+                research_at = s['research_at'][:4]
+
+        df.drop(['research_at'], axis='columns', inplace=True)
 
         # add prefecture
         pref_df = df[df['town_cd'].str.len() == 2]
@@ -39,14 +45,14 @@ class CsvParser:
         df['pref_cd'] = df['town_cd'].str[:2]
         df['pref_name'] = df['pref_cd'].map(pref_dict)
 
-        # filter only town data
+        # filter only town data(town_cd's digit=5)
         df = df[df['town_cd'].str.len() == 5]
         if readonly:
             self._logger.debug(df)
         else:
             if not os.path.exists(out_dir):
                 os.mkdir(out_dir)
-            csv_file_path = os.path.join(out_dir, 'med_area2.csv')
+            csv_file_path = os.path.join(out_dir, f'med_area2_{research_at}.csv')
             df.to_csv(csv_file_path, header=False, index=False)
 
 
